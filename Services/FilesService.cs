@@ -70,7 +70,7 @@ namespace BlogAPI.Services
                 return result;
             }
 
-            throw new NotFoundException("File not found! " + path);
+            throw new NotFoundException("File not found. " + path);
         }
 
         public void DeleteFile(string fileName)
@@ -83,7 +83,7 @@ namespace BlogAPI.Services
             }
             else
             {
-                throw new NotFoundException("File not found! " + filePath);
+                throw new NotFoundException("File not found. " + filePath);
             }
         }
 

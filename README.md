@@ -15,7 +15,7 @@ API developed for blog system. The API has the following features:
 - Management of post comments
 - Documentation with Swagger
 
-<img src="./screenshots/Screenshot_2.jpg" />
+<img src="./Screenshots/Screenshot_2.jpg" />
 
 ## Packages used in the project
 - Microsoft.EntityFrameworkCore.Design<br/>
@@ -57,7 +57,7 @@ the necessary settings for the database, jwt token and email.
 <p/>
 
 The appsettings.Development.json file should look like this:
-<img src="./screenshots/Screenshot_1.jpg" />
+<img src="./Screenshots/Screenshot_1.jpg" />
 
 ### Data Base migration and update
 The following commands are used to prepare the configurations of the

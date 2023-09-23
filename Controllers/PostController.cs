@@ -39,7 +39,7 @@ namespace BlogAPI.Controllers
 
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 Post post = new()
@@ -64,7 +64,7 @@ namespace BlogAPI.Controllers
                     new { postId = post.Id },
                     new Response<Post>(
                         data: post,
-                        message: $"The post {post.Title} was created.",
+                        message: $"The post {post.Title} has been created.",
                         success: true
                     )
                 );
@@ -74,7 +74,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error saving post!",
+                        message: "An internal error occurred while creating post.",
                         success: false,
                         details: ex.Message
                     )
@@ -96,7 +96,7 @@ namespace BlogAPI.Controllers
 
                 if (post == null)
                 {
-                    return NotFound(new Response(message: "Post not found!", success: false));
+                    return NotFound(new Response(message: "Post not found.", success: false));
                 }
 
                 return Ok(new Response<Post>(data: post));
@@ -106,7 +106,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting post!",
+                        message: "An internal error occurred while accessing post.",
                         success: false,
                         details: ex.Message
                     )
@@ -149,7 +149,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting posts!",
+                        message: "An internal error occurred when accessing posts.",
                         success: false,
                         details: ex.Message
                     )
@@ -192,7 +192,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error finding post!",
+                        message: "An internal error occurred while fetching post.",
                         success: false,
                         details: ex.Message
                     )
@@ -214,7 +214,7 @@ namespace BlogAPI.Controllers
 
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 Pagination validPagination = new(pagination.Page, pagination.Size);
@@ -246,7 +246,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting posts!",
+                        message: "An internal error occurred when accessing posts.",
                         success: false,
                         details: ex.Message
                     )
@@ -268,7 +268,7 @@ namespace BlogAPI.Controllers
 
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 Pagination validPagination = new(pagination.Page, pagination.Size);
@@ -300,7 +300,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error finding post!",
+                        message: "An internal error occurred while fetching post.",
                         success: false,
                         details: ex.Message
                     )
@@ -320,7 +320,7 @@ namespace BlogAPI.Controllers
                 var post = _context.Posts.Where(p => p.CoverFileName == fileName).FirstOrDefault();
                 if (post == null || (!post.IsPublic && post.UserAuthId != userId))
                 {
-                    return NotFound(new Response(message: "There is not even a post with the given image!", success: false));
+                    return NotFound(new Response(message: "There is no post with the image provided.", success: false));
                 }
 
                 return _filesService.GetFile(fileName);
@@ -334,7 +334,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                      StatusCodes.Status500InternalServerError,
                      new Response(
-                         message: "An internal server error occurred while getting the file.",
+                         message: "An internal server error occurred while retrieving the file.",
                          success: false,
                          details: ex.Message
                      )
@@ -358,7 +358,7 @@ namespace BlogAPI.Controllers
 
                 if (post == null)
                 {
-                    return NotFound(new Response(message: "Post not found!", success: false));
+                    return NotFound(new Response(message: "Post not found.", success: false));
                 }
 
                 return Ok(new Response<Post>(data: post));
@@ -368,7 +368,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting post!",
+                        message: "An internal error occurred while accessing post.",
                         success: false,
                         details: ex.Message
                     )
@@ -413,7 +413,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting post!",
+                        message: "An internal error occurred when accessing posts.",
                         success: false,
                         details: ex.Message
                     )
@@ -458,7 +458,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error finding post!",
+                        message: "An internal error occurred while fetching post.",
                         success: false,
                         details: ex.Message
                     )
@@ -482,7 +482,7 @@ namespace BlogAPI.Controllers
 
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 Pagination validPagination = new(pagination.Page, pagination.Size);
@@ -512,7 +512,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting posts!",
+                        message: "An internal error occurred when accessing posts.",
                         success: false,
                         details: ex.Message
                     )
@@ -536,7 +536,7 @@ namespace BlogAPI.Controllers
 
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 Pagination validPagination = new(pagination.Page, pagination.Size);
@@ -566,7 +566,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error finding post!",
+                        message: "An internal error occurred while fetching post.",
                         success: false,
                         details: ex.Message
                     )
@@ -598,7 +598,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status404NotFound,
                     new Response(
-                        message: "Post not found!",
+                        message: "Post not found.",
                         success: false,
                         details: ex.Message
                     )
@@ -609,7 +609,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error updating post!",
+                        message: "An internal error occurred while updating the post.",
                         success: false,
                         details: ex.Message
                     )
@@ -634,7 +634,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status404NotFound,
                     new Response(
-                        message: "Post not found!",
+                        message: "Post not found.",
                         success: false,
                         details: ex.Message
                     )
@@ -645,7 +645,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error updating post!",
+                        message: "An internal error occurred while updating the post.",
                         success: false,
                         details: ex.Message
                     )
@@ -669,7 +669,7 @@ namespace BlogAPI.Controllers
 
                 if (post == null)
                 {
-                    return NotFound(new Response(message: "Post not found!", success: false));
+                    return NotFound(new Response(message: "Post not found.", success: false));
                 }
 
                 if (!String.IsNullOrEmpty(post.CoverFileName))
@@ -687,7 +687,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error deleting post!",
+                        message: "An internal error occurred while deleting post.",
                         success: false,
                         details: ex.Message
                     )
@@ -704,7 +704,7 @@ namespace BlogAPI.Controllers
 
             if (post == null)
             {
-                throw new NotFoundException($"Logged in user does not have a post where id is {postId}!");
+                throw new NotFoundException($"The logged in user does not have a post where the id is {postId}.");
             }
 
             if (!String.IsNullOrEmpty(postDto.Title))

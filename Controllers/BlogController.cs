@@ -1,5 +1,6 @@
 using BlogAPI.Context;
 using BlogAPI.CustomExceptions;
+using BlogAPI.DTOs;
 using BlogAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -53,7 +54,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error saving blog!",
+                        message: "An internal error occurred while saving the blog.",
                         success: false,
                         details: ex.Message
                     )
@@ -74,7 +75,7 @@ namespace BlogAPI.Controllers
                 var blog = _context.Blogs.Where(b => b.Id == id && b.UserAuthId == userId).FirstOrDefault();
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 return Ok(new Response<Blog>(data: blog));
@@ -84,7 +85,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting blog!",
+                        message: "An internal error occurred when accessing the blog.",
                         success: false,
                         details: ex.ToString()
                     )
@@ -129,7 +130,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting blog!",
+                        message: "An internal error occurred while listing blogs.",
                         success: false,
                         details: ex.Message
                     )
@@ -174,7 +175,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting blog!",
+                        message: "An internal error occurred when searching for blog.",
                         success: false,
                         details: ex.Message
                     )
@@ -219,7 +220,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error finding blogs!",
+                        message: "An internal error occurred when searching for blogs.",
                         success: false,
                         details: ex.Message
                     )
@@ -251,7 +252,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status404NotFound,
                     new Response(
-                        message: "Blog not found!",
+                        message: "Blog not found.",
                         success: false,
                         details: ex.Message
                     )
@@ -262,7 +263,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting blog!",
+                        message: "An internal error occurred while updating blog.",
                         success: false,
                         details: ex.Message
                     )
@@ -285,7 +286,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status404NotFound,
                     new Response(
-                        message: "Blog not found!",
+                        message: "Blog not found.",
                         success: false,
                         details: ex.Message
                     )
@@ -296,7 +297,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting blog!",
+                        message: "An internal error occurred while updating blog.",
                         success: false,
                         details: ex.Message
                     )
@@ -318,7 +319,7 @@ namespace BlogAPI.Controllers
                 var blog = _context.Blogs.Where(b => b.Id == id && b.UserAuthId == userId).FirstOrDefault();
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 _context.Blogs.Remove(blog);
@@ -331,7 +332,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error deleting blog!",
+                        message: "An internal error occurred when deleting blog.",
                         success: false,
                         details: ex.Message
                     )
@@ -351,7 +352,7 @@ namespace BlogAPI.Controllers
                 var blog = _context.Blogs.Where(b => b.Id == id && b.IsPublic).FirstOrDefault();
                 if (blog == null)
                 {
-                    return NotFound(new Response(message: "Blog not found!", success: false));
+                    return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
                 return Ok(new Response<Blog>(data: blog));
@@ -361,7 +362,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting blog!",
+                        message: "An internal error occurred when accessing the blog.",
                         success: false,
                         details: ex.ToString()
                     )
@@ -404,7 +405,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting blogs!",
+                        message: "An internal error occurred while listing blogs.",
                         success: false,
                         details: ex.Message
                     )
@@ -447,7 +448,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error finding blogs!",
+                        message: "An internal error occurred when searching for blog.",
                         success: false,
                         details: ex.Message
                     )
@@ -490,7 +491,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error finding blogs!",
+                        message: "An internal error occurred when searching for blogs.",
                         success: false,
                         details: ex.Message
                     )
@@ -510,7 +511,7 @@ namespace BlogAPI.Controllers
             var blog = _context.Blogs.Where(b => b.Id == id && b.UserAuthId == userId).FirstOrDefault();
             if (blog == null)
             {
-                throw new NotFoundException($"Logged in user does not have a blog where id is {id}!");
+                throw new NotFoundException($"The logged in user does not have a blog where the id is {id}.");
             }
 
             if (!String.IsNullOrEmpty(blogDto.Name))
@@ -529,9 +530,9 @@ namespace BlogAPI.Controllers
             {
                 blog.ColorSecondary = blogDto.ColorSecondary;
             }
-            if (blogDto?.IsPublic != null)
+            if (blogDto.IsPublic.HasValue)
             {
-                blog.IsPublic = blogDto.IsPublic;
+                blog.IsPublic = blogDto.IsPublic.Value;
             }
 
             _context.Blogs.Update(blog);

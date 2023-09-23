@@ -8,11 +8,11 @@ namespace BlogAPI.DTOs
 {
     public class AuthorizationCodeDto
     {
-        [Required(ErrorMessage = "Code is required!")]
+        [Required(ErrorMessage = "Code is required.")]
         public long Code { get; set; }
 
         [EmailAddress]
-        [Required(ErrorMessage = "Email is required!")]
+        [Required(ErrorMessage = "Email is required.")]
         public string Email { get; set; }
     }
 }

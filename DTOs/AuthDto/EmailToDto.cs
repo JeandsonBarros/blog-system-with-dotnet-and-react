@@ -9,7 +9,7 @@ namespace BlogAPI.DTOs
     public class EmailToDto
     {
         [EmailAddress]
-        [Required(ErrorMessage = "Email is required!")]
+        [Required(ErrorMessage = "Email is required.")]
         public string Email { get; set; }
     }
 }

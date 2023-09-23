@@ -2,7 +2,6 @@ using BlogAPI.Context;
 using BlogAPI.DTOs;
 using BlogAPI.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogAPI.Controllers
@@ -30,7 +29,7 @@ namespace BlogAPI.Controllers
                 var post = _context.Posts.Where(p => p.Id == postId && p.IsPublic).FirstOrDefault();
                 if (post == null)
                 {
-                    return NotFound(new Response(message: "Post not found!", success: false));
+                    return NotFound(new Response(message: "Post not found.", success: false));
                 }
 
                 var userId = Convert.ToInt64(User.Identity?.Name);
@@ -51,7 +50,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error creating comment!",
+                        message: "An internal error occurred while creating comment.",
                         success: false,
                         details: ex.Message
                     )
@@ -95,7 +94,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting comments!",
+                        message: "An internal error occurred when accessing comments.",
                         success: false,
                         details: ex.Message
                     )
@@ -114,7 +113,7 @@ namespace BlogAPI.Controllers
                 var post = _context.Posts.Where(p => p.Id == postId && p.IsPublic).FirstOrDefault();
                 if (post == null)
                 {
-                    return NotFound(new Response(message: "Post not found!", success: false));
+                    return NotFound(new Response(message: "Post not found.", success: false));
                 }
 
                 Pagination validPagination = new(pagination.Page, pagination.Size);
@@ -144,7 +143,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error getting comments!",
+                        message: "An internal error occurred when accessing comments.",
                         success: false,
                         details: ex.Message
                     )
@@ -164,7 +163,7 @@ namespace BlogAPI.Controllers
                 var comment = _context.Comments.Where(c => c.Id == commentId && c.UserAuthId == userId).FirstOrDefault();
                 if (comment == null)
                 {
-                    return NotFound(new Response(message: "Comment not found!", success: false));
+                    return NotFound(new Response(message: "Comment not found.", success: false));
                 }
 
                 comment.CommentText = commentDto.CommentText;
@@ -180,7 +179,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error updating comment!",
+                        message: "An internal error occurred while updating the comment.",
                         success: false,
                         details: ex.Message
                     )
@@ -201,7 +200,7 @@ namespace BlogAPI.Controllers
                 var comment = _context.Comments.Where(c => c.Id == commentId && c.UserAuthId == userId).FirstOrDefault();
                 if (comment == null)
                 {
-                    return NotFound(new Response(message: "Comment not found!", success: false));
+                    return NotFound(new Response(message: "Comment not found.", success: false));
                 }
 
                 _context.Comments.Remove(comment);
@@ -214,7 +213,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error deleting comment!",
+                        message: "An internal error occurred while deleting the comment.",
                         success: false,
                         details: ex.Message
                     )

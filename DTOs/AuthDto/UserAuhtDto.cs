@@ -1,23 +1,19 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace BlogAPI.DTOs
 {
     public class UserAuthDto
     {
-        [Required(ErrorMessage = "Name is required!")]
+        [Required(ErrorMessage = "Name is required.")]
         public string Name { get; set; }
 
         [EmailAddress]
-        [Required(ErrorMessage = "Email is required!")]
+        [Required(ErrorMessage = "Email is required.")]
         public string Email { get; set; }
 
-        [Required(ErrorMessage = "Password is required!")]
-        [MinLength(6, ErrorMessage = "The password must have at least 6 characters")]
+        [Required(ErrorMessage = "Password is required.")]
+        [MinLength(6, ErrorMessage = "The password must be at least 6 characters long.")]
         public string Password { get; set; }
 
         public IFormFile? FileProfilePicture { get; set; }

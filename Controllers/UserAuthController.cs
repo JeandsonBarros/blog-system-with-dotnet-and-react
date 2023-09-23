@@ -47,7 +47,7 @@ namespace BlogAPI.Controllers
                     {
                         return StatusCode(
                             StatusCodes.Status400BadRequest,
-                            new Response(message: $"There is already a user with email {userAuthDto.Email}!", success: false)
+                            new Response(message: $"There is already a user with email address {userAuthDto.Email}.", success: false)
                         );
                     }
                     else
@@ -102,8 +102,8 @@ namespace BlogAPI.Controllers
 
                 var (isSentEmail, messageSendEmail) = await SendEmailAsync(
                     email: userAuth.Email,
-                    subject: "Email confirmation code - Blog",
-                    body: $"Your email confirmation code is {code}, valid for 15 minutes!"
+                    subject: "Email confirmation code - Blogs",
+                    body: $"The confirmation code in your email is {code}, valid for 15 minutes."
                 );
 
                 if (isSentEmail)
@@ -113,9 +113,9 @@ namespace BlogAPI.Controllers
                         nameof(ConfirmEmail),
                         new Response<UserAuth>(
                             data: userAuth,
-                            message: $"Code for email confirmation has been sent to {userAuth.Email}.",
+                            message: $"The code for email confirmation has been sent to {userAuth.Email}.",
                             success: true,
-                            details: $"Use code in {uri}"
+                            details: $"Use the code in {uri}"
                         )
                     );
                 }
@@ -126,7 +126,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                    StatusCodes.Status400BadRequest,
                    new Response(
-                       message: "Error sending email with code to confirm email!",
+                       message: "Error sending email with code to confirm email.",
                        success: false,
                        details: messageSendEmail
                     )
@@ -137,7 +137,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error confirming email!",
+                        message: "An internal error occurred while registering.",
                         success: false,
                         details: ex.Message
                     )
@@ -157,7 +157,7 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Where(user => user.Email == authorizationCodeDto.Email).FirstOrDefault();
                 if (user == null)
                 {
-                    return NotFound(new Response(message: $"Email user {authorizationCodeDto.Email} not found!", success: false));
+                    return NotFound(new Response(message: $"Email user {authorizationCodeDto.Email} not found.", success: false));
                 }
 
                 var (isValidCode, messageIsValidade) = IsValidAuthorizationCode(user.Id, authorizationCodeDto.Code);
@@ -179,7 +179,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error confirming email!",
+                        message: "An internal error occurred while confirming email.",
                         success: false,
                         details: ex.Message
                     )
@@ -200,14 +200,14 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Where(user => user.Email == loginDto.Email).FirstOrDefault();
                 if (user == null)
                 {
-                    return NotFound(new Response(message: "User not found!", success: false));
+                    return NotFound(new Response(message: "User not found.", success: false));
                 }
 
                 if (ToHash(loginDto.Password) != user.Password)
                 {
                     return StatusCode(
                         StatusCodes.Status401Unauthorized,
-                        new Response(message: "Invalid password!", success: false)
+                        new Response(message: "Invalid password.", success: false)
                     );
                 }
 
@@ -216,7 +216,7 @@ namespace BlogAPI.Controllers
                     return StatusCode(
                         StatusCodes.Status401Unauthorized,
                         new Response(
-                            message: "You need to confirm your email to login!",
+                            message: "You need to confirm your email to login.",
                             success: false,
                             details: "To confirm the email, you must inform the endpoint /api/auth/confirm-email the code that was sent to the email."
                         )
@@ -236,7 +236,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Login error!",
+                        message: "An internal error occurred while logging in.",
                         success: false,
                         details: ex.Message
                     )
@@ -257,7 +257,7 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Find(id);
                 if (user == null)
                 {
-                    return NotFound(new Response(message: "User not found!", success: false));
+                    return NotFound(new Response(message: "User not found.", success: false));
                 }
 
                 var roles = _context.Roles.Where(x => x.Users.Any(user => user.Id == id));
@@ -270,7 +270,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "Error geting account data!",
+                        message: "An internal error occurred while retrieving account data.",
                         success: false,
                         details: ex.Message
                     )
@@ -289,7 +289,7 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Where(u => u.FileProfilePictureName == fileName).FirstOrDefault();
                 if (user == null)
                 {
-                    return NotFound(new Response(message: "There is not even a user with the given image!", success: false));
+                    return NotFound(new Response(message: "There is not even a user with the given image.", success: false));
                 }
 
                 return _filesService.GetFile(fileName);
@@ -340,7 +340,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status400BadRequest,
                     new Response(
-                        message: "Error updating account data, check the data entered is correct!",
+                        message: "Error updating account data, check the data entered is correct.",
                         success: false,
                         details: ex.Message
                     )
@@ -351,7 +351,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when updating your account.",
+                        message: "An internal server error occurred while updating your account.",
                         success: false,
                         details: ex.Message
                     )
@@ -391,7 +391,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when updating your account.",
+                        message: "An internal server error occurred while updating your account.",
                         success: false,
                         details: ex.Message
                     )
@@ -413,7 +413,7 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Find(id);
                 if (user == null)
                 {
-                    return NotFound(new Response(message: "User not found!", success: false));
+                    return NotFound(new Response(message: "User not found.", success: false));
                 }
 
                 if (!String.IsNullOrEmpty(user.FileProfilePictureName))
@@ -431,7 +431,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when deleting the account.",
+                        message: "An internal server error occurred while deleting the account.",
                         success: false,
                         details: ex.Message
                     )
@@ -451,7 +451,7 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Where(user => user.Email == emailToDto.Email).FirstOrDefault();
                 if (user == null)
                 {
-                    return NotFound(new Response(message: $"Email user {emailToDto.Email} not found!", success: false));
+                    return NotFound(new Response(message: $"Email user {emailToDto.Email} not found.", success: false));
                 }
 
                 Random random = new Random();
@@ -468,7 +468,7 @@ namespace BlogAPI.Controllers
 
                 var (isSent, message) = await SendEmailAsync(
                     email: emailToDto.Email,
-                    subject: "BlogHub - Your code reset forgotten password",
+                    subject: "Blogs - Your code reset forgotten password",
                     body: $"Your password reset code is {code}, valid for 15 minutes."
                 );
 
@@ -501,7 +501,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when sending email.",
+                        message: "An internal server error occurred while sending email.",
                         success: false,
                         details: ex.Message
                     )
@@ -521,7 +521,7 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Where(user => user.Email == changeForgottenPasswordDto.Email).FirstOrDefault();
                 if (user == null)
                 {
-                    return NotFound(new Response(message: $"Email user {changeForgottenPasswordDto.Email} not found!", success: false));
+                    return NotFound(new Response(message: $"Email user {changeForgottenPasswordDto.Email} not found.", success: false));
                 }
 
                 var (isValidCode, message) = IsValidAuthorizationCode(user.Id, changeForgottenPasswordDto.Code);
@@ -543,7 +543,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when updating password.",
+                        message: "An internal server error occurred while updating the password.",
                         success: false,
                         details: ex.Message
                     )
@@ -587,7 +587,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when geting user.",
+                        message: "An internal server error occurred while getting the user.",
                         success: false,
                         details: ex.Message
                     )
@@ -632,7 +632,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                    StatusCodes.Status500InternalServerError,
                    new Response(
-                       message: "There was an internal server error when finding user.",
+                       message: "An internal server error occurred while locating the user.",
                        success: false,
                        details: ex.Message
                    )
@@ -662,7 +662,7 @@ namespace BlogAPI.Controllers
                 {
                     return StatusCode(
                         StatusCodes.Status403Forbidden,
-                        new Response(message: "An admin cannot delete another admin!", success: false)
+                        new Response(message: "An admin cannot delete another admin.", success: false)
                     );
                 }
 
@@ -681,7 +681,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when deleting user.",
+                        message: "An internal server error occurred while deleting the user.",
                         success: false,
                         details: ex.Message
                     )
@@ -702,7 +702,7 @@ namespace BlogAPI.Controllers
                 var user = _context.Users.Find(userId);
                 if (user == null)
                 {
-                    return NotFound(new Response(message: "User not found", success: false));
+                    return NotFound(new Response(message: "User not found.", success: false));
                 }
 
                 bool isAdmin = user.Roles.Any(role => role.RoleName == "ADMIN");
@@ -735,7 +735,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status400BadRequest,
                     new Response(
-                        message: "Error updating user data, check the data entered is correct!",
+                        message: "Error updating user data, check the data entered is correct.",
                         success: false,
                         details: ex.Message
                     )
@@ -746,7 +746,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when updating user.",
+                        message: "An internal server error occurred while updating the user.",
                         success: false,
                         details: ex.Message
                     )
@@ -803,7 +803,7 @@ namespace BlogAPI.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new Response(
-                        message: "There was an internal server error when updating user.",
+                        message: "An internal server error occurred while updating the user.",
                         success: false,
                         details: ex.Message
                     )
