@@ -1,0 +1,15 @@
+.userPicture,
+.userPictureSm {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.userPicture {
+    height: 100px;
+    width: 100px;
+}
+
+.userPictureSm {
+    height: 50px;
+    width: 50px;
+}

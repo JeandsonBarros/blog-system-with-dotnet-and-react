@@ -1,0 +1,21 @@
+.btnNavBlogs {
+    display: none;
+}
+
+@media only screen and (max-width: 600px) {
+    .btnNavBlogs {
+        display: inline;
+    }
+    .navBlogs {
+        display: none;
+    }
+}
+
+@media only screen and (min-width: 600px) {
+    .btnNavBlogs {
+        display: none;
+    }
+    .navBlogs {
+        display: block;
+    }
+}

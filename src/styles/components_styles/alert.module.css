@@ -1,0 +1,34 @@
+.alert {
+    border: 1px solid #ffffff57;
+    position: fixed;
+    top: 70px;
+    right: 10px;
+    z-index: 999;
+    max-width: 200px;
+    padding: 5px 10px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.24);
+}
+
+.info,
+.error,
+.warning,
+.success {
+    font-size: 25px;
+    margin-right: 5px;
+}
+
+.info {
+    color: var(--info);
+}
+.error {
+    color: var(--error);
+}
+.warning {
+    color: var(--warning);
+}
+.success {
+    color: var(--success);
+}
+

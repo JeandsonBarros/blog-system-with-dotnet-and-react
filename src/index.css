@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424; */
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  --info: #005FCC;
+  --warning: #D1AE00;
+  --success: #17c964;
+  --error: #f31260;
+}
+
+/*
+ #012E40
+ #024959
+ #026773
+ #3CA6A6
+ #F2E3D5 
+*/
+
+body,
+main
+{
+  min-height: 100vh;
+  border: 0;
+  margin: 0;
+
+}
+
+.logo{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: #026773;
+  text-decoration: none;
+  font-size: 1.5rem;
+}
+
+section{
+  height: 100%;
+}
+
+.linkCustom{
+  color: #024959;
+}
+.linkCustom:hover{
+  text-decoration: underline;
+}
+
+footer a {
+  margin: 5px;
+  color: #024959;
+  font-size: 20px;
+}
+
+footer a:hover {
+  color: #3CA6A6;
+}
+
+.addButton{
+  font-size: 100px;
+  position: fixed;
+  bottom: 90px;
+  right: 30px;
+}
+
+h1{
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+}
