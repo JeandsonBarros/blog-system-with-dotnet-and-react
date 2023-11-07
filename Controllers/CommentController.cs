@@ -3,6 +3,7 @@ using BlogAPI.DTOs;
 using BlogAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlogAPI.Controllers
 {
@@ -77,14 +78,11 @@ namespace BlogAPI.Controllers
 
                 var totalRecords = _context.Comments.Where(c => c.UserAuthId == userId && c.Post.IsPublic).Count();
 
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
                 PageResponse<List<Comment>> pageResponse = new(
                     data: comments,
                     page: validPagination.Page,
                     size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
+                    totalRecords: totalRecords
                 );
 
                 return Ok(pageResponse);
@@ -104,14 +102,14 @@ namespace BlogAPI.Controllers
 
         /// <summary> Get post comments </summary>
         /// <response code="200"> Return a comments page </response>
-        [AllowAnonymous]
         [HttpGet("post-comments/{postId}")]
         public ActionResult<PageResponse<Comment>> PostComments([FromQuery] Pagination pagination, long postId)
         {
             try
             {
-                var post = _context.Posts.Where(p => p.Id == postId && p.IsPublic).FirstOrDefault();
-                if (post == null)
+                var userId = Convert.ToInt64(User.Identity?.Name);
+                var post = _context.Posts.Find(postId);
+                if (post == null || (!post.IsPublic && post.UserAuthId != userId))
                 {
                     return NotFound(new Response(message: "Post not found.", success: false));
                 }
@@ -120,20 +118,18 @@ namespace BlogAPI.Controllers
 
                 var comments = _context.Comments
                     .Where(c => c.PostId == postId)
+                    .Include(c => c.User)
                     .Skip((validPagination.Page - 1) * pagination.Size)
                     .Take(validPagination.Size)
                     .ToList();
 
                 var totalRecords = _context.Comments.Where(c => c.PostId == postId).Count();
 
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
                 PageResponse<List<Comment>> pageResponse = new(
                     data: comments,
                     page: validPagination.Page,
                     size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
+                    totalRecords: totalRecords
                 );
 
                 return Ok(pageResponse);

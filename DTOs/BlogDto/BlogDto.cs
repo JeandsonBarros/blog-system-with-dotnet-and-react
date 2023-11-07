@@ -5,24 +5,24 @@ namespace BlogAPI.DTOs
 {
     public class BlogDto
     {
-        [Required(ErrorMessage = "Nome é obrigatório.")]
-        public string Name { get; set; }
-        [Required(ErrorMessage = "Assunto é obrigatório.")]
-        public string Matter { get; set; }
-        [Required(ErrorMessage = "Informe se é público.")]
+        [Required(ErrorMessage = "Title is mandatory.")]
+        public string Title { get; set; }
+        [Required(ErrorMessage = "Description is mandatory.")]
+        public string Description { get; set; }
+        [Required(ErrorMessage = "State whether it is public.")]
         public bool IsPublic { get; set; }
-        public string? ColorPrimary { get; set; }
-        public string? ColorSecondary { get; set; }
+        public string? HeaderColor { get; set; }
+        public string? TitleColor { get; set; }
     }
 
     [ValidateNever]
     public class BlogDtoNoValidation
     {
-        public string? Name { get; set; }
-        public string? Matter { get; set; }
+        public string? Title { get; set; }
+        public string? Description { get; set; }
         public bool? IsPublic { get; set; }
-        public string? ColorPrimary { get; set; }
-        public string? ColorSecondary { get; set; }
+        public string? HeaderColor { get; set; }
+        public string? TitleColor { get; set; }
     }
 
 }

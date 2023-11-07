@@ -1,4 +1,5 @@
 readmin-private.md
+appsettings-private.json
 Migrations
 private-appsettings.Development.json
 *.swp

@@ -19,9 +19,8 @@ namespace BlogAPI.Models
         public DateTime CodeExpires { get; } = DateTime.UtcNow.AddMinutes(15);
 
         /// <summary> 
-        /// User ID to which the email address to which the code will be sent belongs. 
+        /// Email address to which the code will be sent.
         /// </summary>
-        public long UserAuthId { get; set; }
-        public UserAuth UserAuth { get; set; }
+        public string Email { get; set; }
     }
 }

@@ -5,12 +5,14 @@ namespace BlogAPI.DTOs
 {
     public class PostDto
     {
-        [Required(ErrorMessage = "Título é obrigatório.")]
+        [Required(ErrorMessage = "Title is required.")]
         public string Title { get; set; }
+        [Required(ErrorMessage = "Subtitle is required.")]
+        public string Subtitle { get; set; }
         public IFormFile? CoverFile { get; set; }
-        [Required(ErrorMessage = "Texto é obrigatório.")]
+        [Required(ErrorMessage = "Text is required.")]
         public string Text { get; set; }
-        [Required(ErrorMessage = "Informe se é público.")]
+        [Required(ErrorMessage = "State whether it is public.")]
         public bool IsPublic { get; set; }
     }
 
@@ -18,6 +20,7 @@ namespace BlogAPI.DTOs
     public class PostDtoNoValidation
     {
         public string? Title { get; set; }
+        public string? Subtitle { get; set; }
         public IFormFile? CoverFile { get; set; }
         public string? Text { get; set; }
         public bool? IsPublic { get; set; }

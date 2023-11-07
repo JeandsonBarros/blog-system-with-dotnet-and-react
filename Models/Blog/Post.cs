@@ -10,6 +10,7 @@ namespace BlogAPI.Models
     {
         public long Id { get; set; }
         public string Title { get; set; }
+        public string Subtitle { get; set; }
         public string? CoverFileName { get; set; }
         public string Text { get; set; }
         public DateTime Date { get; set; } = DateTime.Now;

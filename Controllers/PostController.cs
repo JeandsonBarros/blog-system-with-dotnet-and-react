@@ -5,6 +5,7 @@ using BlogAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BlogAPI.CustomExceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlogAPI.Controllers
 {
@@ -31,7 +32,7 @@ namespace BlogAPI.Controllers
         {
             try
             {
-                var userId = Convert.ToInt64(User?.Identity?.Name);
+                var userId = Convert.ToInt64(User.Identity?.Name);
 
                 var blog = _context.Blogs
                     .Where(x => x.Id == blogId && x.UserAuthId == userId)
@@ -45,6 +46,7 @@ namespace BlogAPI.Controllers
                 Post post = new()
                 {
                     Title = postDto.Title,
+                    Subtitle = postDto.Subtitle,
                     Text = postDto.Text,
                     IsPublic = postDto.IsPublic,
                     UserAuthId = userId,
@@ -82,270 +84,10 @@ namespace BlogAPI.Controllers
             }
         }
 
-        /// <summary> Get a public post </summary>
-        /// <response code="200"> Return a post </response>
-        [AllowAnonymous]
-        [HttpGet("public/{postId}")]
-        public ActionResult<Response<Post>> GetPublicPost(long postId)
-        {
-            try
-            {
-                var post = _context.Posts
-                    .Where(p => p.Id == postId && p.IsPublic && p.Blog.IsPublic)
-                    .FirstOrDefault();
-
-                if (post == null)
-                {
-                    return NotFound(new Response(message: "Post not found.", success: false));
-                }
-
-                return Ok(new Response<Post>(data: post));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred while accessing post.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Get public posts </summary>
-        /// <response code="200"> Return a page of posts </response>
-        [AllowAnonymous]
-        [HttpGet("public")]
-        public ActionResult<PageResponse<Post>> GetPublicPosts([FromQuery] Pagination pagination)
-        {
-            try
-            {
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var blogs = _context.Posts
-                    .Where(p => p.IsPublic && p.Blog.IsPublic)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Posts.Where(p => p.IsPublic && p.Blog.IsPublic).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Post>> pagedResponse = new(
-                    data: blogs,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred when accessing posts.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Find public post </summary>
-        /// <response code="200"> Return a page of posts </response>
-        [AllowAnonymous]
-        [HttpGet("public/find-post/{title}")]
-        public ActionResult<PageResponse<Post>> FindPublicPost([FromQuery] Pagination pagination, string title)
-        {
-            try
-            {
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var blogs = _context.Posts
-                    .Where(p => p.IsPublic && p.Title.Contains(title) && p.Blog.IsPublic)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Posts.Where(p => p.IsPublic && p.Title.Contains(title) && p.Blog.IsPublic).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Post>> pagedResponse = new(
-                    data: blogs,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred while fetching post.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Get public blog posts </summary>
-        /// <response code="200"> Return a page of posts </response>
-        [AllowAnonymous]
-        [HttpGet("public/blog-posts/{blogId}")]
-        public ActionResult<PageResponse<Post>> GetBlogPosts([FromQuery] Pagination pagination, long blogId)
-        {
-            try
-            {
-                var blog = _context.Blogs
-                   .Where(b => b.Id == blogId && b.IsPublic)
-                   .FirstOrDefault();
-
-                if (blog == null)
-                {
-                    return NotFound(new Response(message: "Blog not found.", success: false));
-                }
-
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var posts = _context.Posts
-                    .Where(p => p.IsPublic && p.Blog.IsPublic && p.BlogId == blogId)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Posts
-                    .Where(p => p.IsPublic && p.Blog.IsPublic && p.BlogId == blogId)
-                    .Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Post>> pagedResponse = new(
-                    data: posts,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred when accessing posts.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Find public blog posts </summary>
-        /// <response code="200"> Return a page of posts </response>
-        [AllowAnonymous]
-        [HttpGet("public/find-blog-post/{blogId}/{title}")]
-        public ActionResult<PageResponse<Post>> FindBlogPost([FromQuery] Pagination pagination, long blogId, string title)
-        {
-            try
-            {
-                var blog = _context.Blogs
-                   .Where(b => b.Id == blogId && b.IsPublic)
-                   .FirstOrDefault();
-
-                if (blog == null)
-                {
-                    return NotFound(new Response(message: "Blog not found.", success: false));
-                }
-
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var posts = _context.Posts
-                    .Where(p => p.BlogId == blogId && p.Blog.IsPublic && p.Title.Contains(title) && p.IsPublic)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Posts
-                    .Where(p => p.BlogId == blogId && p.Blog.IsPublic && p.Title.Contains(title) && p.IsPublic)
-                    .Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Post>> pagedResponse = new(
-                    data: posts,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred while fetching post.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Get post cover picture </summary>
-        /// <response code="200"> Return a file </response>
-        [HttpGet("cover-picture/{fileName}")]
-        public IActionResult GetCoverImage(string fileName)
-        {
-            try
-            {
-                var userId = Convert.ToInt64(User.Identity?.Name);
-
-                var post = _context.Posts.Where(p => p.CoverFileName == fileName).FirstOrDefault();
-                if (post == null || (!post.IsPublic && post.UserAuthId != userId))
-                {
-                    return NotFound(new Response(message: "There is no post with the image provided.", success: false));
-                }
-
-                return _filesService.GetFile(fileName);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new Response(message: ex.Message, success: false));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                     StatusCodes.Status500InternalServerError,
-                     new Response(
-                         message: "An internal server error occurred while retrieving the file.",
-                         success: false,
-                         details: ex.Message
-                     )
-                 );
-            }
-        }
-
         /// <summary> Get post from authenticated user </summary>
         /// <response code="200"> Return a post </response>
         [Authorize]
-        [HttpGet("user/{postId}")]
+        [HttpGet("of-user/{postId}")]
         public ActionResult<Response<Post>> GetUserPost(long postId)
         {
             try
@@ -354,6 +96,7 @@ namespace BlogAPI.Controllers
 
                 var post = _context.Posts
                     .Where(p => p.Id == postId && p.UserAuthId == userId)
+                    .Include(p=>p.Blog)
                     .FirstOrDefault();
 
                 if (post == null)
@@ -379,31 +122,46 @@ namespace BlogAPI.Controllers
         /// <summary> Get posts from authenticated user </summary>
         /// <response code="200"> Return a page of posts </response>
         [Authorize]
-        [HttpGet("user")]
-        public ActionResult<PageResponse<Post>> GetUserPosts([FromQuery] Pagination pagination)
+        [HttpGet("of-user")]
+        public ActionResult<PageResponse<Post>> GetUserPosts([FromQuery] Pagination pagination, [FromQuery] string? search)
         {
             try
             {
-                var userId = Convert.ToInt64(User.Identity?.Name);
-
                 Pagination validPagination = new(pagination.Page, pagination.Size);
+                var userId = Convert.ToInt64(User.Identity?.Name);
+                var posts = new List<Post>();
+                var totalRecords = 0;
 
-                var posts = _context.Posts
-                            .Where(p => p.UserAuthId == userId)
-                            .Skip((validPagination.Page - 1) * validPagination.Size)
-                            .Take(validPagination.Size)
-                            .ToList();
+                if (String.IsNullOrEmpty(search))
+                {
+                    posts = _context.Posts
+                        .Where(p => p.UserAuthId == userId)
+                        .Include(p => p.Blog)
+                        .OrderByDescending(p => p.Date)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                var totalRecords = _context.Posts.Where(p => p.UserAuthId == userId).Count();
+                    totalRecords = _context.Posts.Where(p => p.UserAuthId == userId).Count();
+                }
+                else
+                {
+                    posts = _context.Posts
+                        .Where(p => p.UserAuthId == userId && p.Title.Contains(search))
+                        .Include(p => p.Blog)
+                        .OrderByDescending(p => p.Date)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
+                    totalRecords = _context.Posts.Where(p => p.UserAuthId == userId && p.Title.Contains(search)).Count();
+                }
 
                 PageResponse<List<Post>> pagedResponse = new(
                     data: posts,
                     page: validPagination.Page,
                     size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
+                    totalRecords: totalRecords
                 );
 
                 return Ok(pagedResponse);
@@ -414,51 +172,6 @@ namespace BlogAPI.Controllers
                     StatusCodes.Status500InternalServerError,
                     new Response(
                         message: "An internal error occurred when accessing posts.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Find posts from authenticated user </summary>
-        /// <response code="200"> Return a page of posts </response>
-        [Authorize]
-        [HttpGet("user/find-post/{title}")]
-        public ActionResult<PageResponse<Post>> FindUserPosts(string title, [FromQuery] Pagination pagination)
-        {
-            try
-            {
-                var userId = Convert.ToInt64(User.Identity?.Name);
-
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var posts = _context.Posts
-                            .Where(p => p.UserAuthId == userId && p.Title.Contains(title))
-                            .Skip((validPagination.Page - 1) * validPagination.Size)
-                            .Take(validPagination.Size)
-                            .ToList();
-
-                var totalRecords = _context.Posts.Where(p => p.UserAuthId == userId && p.Title.Contains(title)).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Post>> pagedResponse = new(
-                    data: posts,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred while fetching post.",
                         success: false,
                         details: ex.Message
                     )
@@ -469,13 +182,15 @@ namespace BlogAPI.Controllers
         /// <summary> Get public and private posts from the user's blog </summary>
         /// <response code="200"> Return a page of posts </response>
         [Authorize]
-        [HttpGet("user/blog-posts/{blogId}")]
-        public ActionResult<PageResponse<Post>> GetUserBlogPosts([FromQuery] Pagination pagination, long blogId)
+        [HttpGet("of-user/blog-posts/{blogId}")]
+        public ActionResult<PageResponse<Post>> GetUserBlogPosts([FromQuery] Pagination pagination, long blogId, [FromQuery] string? search)
         {
             try
             {
+                Pagination validPagination = new(pagination.Page, pagination.Size);
                 var userId = Convert.ToInt64(User.Identity?.Name);
-
+                var posts = new List<Post>();
+                var totalRecords = 0;
                 var blog = _context.Blogs
                    .Where(b => b.Id == blogId && b.UserAuthId == userId)
                    .FirstOrDefault();
@@ -485,24 +200,36 @@ namespace BlogAPI.Controllers
                     return NotFound(new Response(message: "Blog not found.", success: false));
                 }
 
-                Pagination validPagination = new(pagination.Page, pagination.Size);
+                if (String.IsNullOrEmpty(search))
+                {
+                    posts = _context.Posts
+                       .Where(p => p.BlogId == blogId)
+                       .Include(p=>p.Blog)
+                       .OrderByDescending(p => p.Date)
+                       .Skip((validPagination.Page - 1) * validPagination.Size)
+                       .Take(validPagination.Size)
+                       .ToList();
 
-                var posts = _context.Posts
-                        .Where(p => p.BlogId == blogId)
-                        .Skip((validPagination.Page - 1) * validPagination.Size)
-                        .Take(validPagination.Size)
-                        .ToList();
+                    totalRecords = _context.Posts.Where(p => p.BlogId == blogId).Count();
+                }
+                else
+                {
+                    posts = _context.Posts
+                       .Where(p => p.BlogId == blogId && p.Title.Contains(search))
+                       .Include(p=>p.Blog)
+                       .OrderByDescending(p => p.Date)
+                       .Skip((validPagination.Page - 1) * validPagination.Size)
+                       .Take(validPagination.Size)
+                       .ToList();
 
-                var totalRecords = _context.Posts.Where(p => p.BlogId == blogId).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
+                    totalRecords = _context.Posts.Where(p => p.BlogId == blogId && p.Title.Contains(search)).Count();
+                }
 
                 PageResponse<List<Post>> pagedResponse = new(
                     data: posts,
                     page: validPagination.Page,
                     size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
+                    totalRecords: totalRecords
                 );
 
                 return Ok(pagedResponse);
@@ -520,58 +247,51 @@ namespace BlogAPI.Controllers
             }
         }
 
-        /// <summary> Find public and private posts from the user's blog </summary>
-        /// <response code="200"> Return a page of posts </response>
-        [Authorize]
-        [HttpGet("user/find-blog-post/{blogId}/{title}")]
-        public ActionResult<PageResponse<Post>> FindUserBlogPost([FromQuery] Pagination pagination, long blogId, string title)
+        private async Task<Post> UpdatePost(long postId, PostDtoNoValidation postDto)
         {
-            try
+            var userId = Convert.ToInt64(User.Identity?.Name);
+            var post = _context.Posts
+                .Where(p => p.Id == postId && p.UserAuthId == userId)
+                .Include(p=>p.Blog)
+                .FirstOrDefault();
+
+            if (post == null)
             {
-                var userId = Convert.ToInt64(User.Identity?.Name);
+                throw new NotFoundException($"The logged in user does not have a post where the id is {postId}.");
+            }
 
-                var blog = _context.Blogs
-                   .Where(b => b.Id == blogId && b.UserAuthId == userId)
-                   .FirstOrDefault();
-
-                if (blog == null)
+            if (!String.IsNullOrEmpty(postDto.Title))
+            {
+                post.Title = postDto.Title;
+            }
+            if (!String.IsNullOrEmpty(postDto.Subtitle))
+            {
+                post.Subtitle = postDto.Subtitle;
+            }
+            if (!String.IsNullOrEmpty(postDto.Text))
+            {
+                post.Text = postDto.Text;
+            }
+            if (postDto.IsPublic.HasValue)
+            {
+                post.IsPublic = postDto.IsPublic.Value;
+            }
+            if (postDto.CoverFile != null)
+            {
+                if (!String.IsNullOrEmpty(post.CoverFileName))
                 {
-                    return NotFound(new Response(message: "Blog not found.", success: false));
+                    _filesService.DeleteFile(post.CoverFileName);
                 }
 
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var posts = _context.Posts
-                          .Where(p => p.BlogId == blogId && p.Title.Contains(title))
-                          .Skip((validPagination.Page - 1) * validPagination.Size)
-                          .Take(validPagination.Size)
-                          .ToList();
-
-                var totalRecords = _context.Posts.Where(p => p.BlogId == blogId && p.Title.Contains(title)).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Post>> pagedResponse = new(
-                    data: posts,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
+                post.CoverFileName = await _filesService.SaveFile(postDto.CoverFile);
             }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred while fetching post.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
+
+            post.IsUpdated = true;
+
+            _context.Posts.Update(post);
+            _context.SaveChanges();
+
+            return post;
         }
 
         /// <summary> Fully update a post </summary>
@@ -586,6 +306,7 @@ namespace BlogAPI.Controllers
                 PostDtoNoValidation postDtoNoValidation = new()
                 {
                     Title = postDto.Title,
+                    Subtitle = postDto.Subtitle,
                     Text = postDto.Text,
                     IsPublic = postDto.IsPublic,
                     CoverFile = postDto.CoverFile
@@ -695,46 +416,253 @@ namespace BlogAPI.Controllers
             }
         }
 
-        private async Task<Post> UpdatePost(long postId, PostDtoNoValidation postDto)
+        /// <summary> Delete post cover image </summary>
+        /// <response code="204"> If post cover image deleted success </response>
+        /// <response code="401"> if unauthenticated </response>
+        [Authorize]
+        [HttpDelete("delete-cover-post/{postId}")]
+        [ProducesResponseType(204)]
+        public IActionResult DeleteCoverImage(long postId)
         {
-            var userId = Convert.ToInt64(User.Identity?.Name);
-            var post = _context.Posts
-                .Where(p => p.Id == postId && p.UserAuthId == userId)
-                .FirstOrDefault();
+            try
+            {
+                var userId = Convert.ToInt64(User.Identity?.Name);
+                var post = _context.Posts
+                    .Where(p => p.Id == postId && p.UserAuthId == userId)
+                    .FirstOrDefault();
 
-            if (post == null)
-            {
-                throw new NotFoundException($"The logged in user does not have a post where the id is {postId}.");
-            }
-
-            if (!String.IsNullOrEmpty(postDto.Title))
-            {
-                post.Title = postDto.Title;
-            }
-            if (!String.IsNullOrEmpty(postDto.Text))
-            {
-                post.Title = postDto.Text;
-            }
-            if (postDto.IsPublic.HasValue)
-            {
-                post.IsPublic = postDto.IsPublic.Value;
-            }
-            if (postDto.CoverFile != null)
-            {
-                if (!String.IsNullOrEmpty(post.CoverFileName))
+                if (post == null)
                 {
-                    _filesService.DeleteFile(post.CoverFileName);
+                    return NotFound(new Response(message: "Post not found.", success: false));
                 }
 
-                post.CoverFileName = await _filesService.SaveFile(postDto.CoverFile);
+                if (String.IsNullOrEmpty(post.CoverFileName))
+                {
+                    return NotFound(new Response(
+                          message: "There is no cover to remove.",
+                          success: false
+                    ));
+                }
+
+                _filesService.DeleteFile(post.CoverFileName);
+
+                post.CoverFileName = null;
+                _context.Posts.Update(post);
+                _context.SaveChanges();
+
+                return StatusCode(StatusCodes.Status204NoContent);
             }
+            catch (System.Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new Response(
+                        message: "An internal server error occurred while deleting the cover image.",
+                        success: false,
+                        details: ex.Message
+                    )
+                );
+            }
+        }
 
-            post.IsUpdated = true;
+        /// <summary> Get a public post </summary>
+        /// <response code="200"> Return a post </response>
+        [AllowAnonymous]
+        [HttpGet("public/{postId}")]
+        public ActionResult<Response<Post>> GetPublicPost(long postId)
+        {
+            try
+            {
+                var post = _context.Posts
+                    .Where(p => p.Id == postId && p.IsPublic && p.Blog.IsPublic)
+                    .Include(p=>p.Blog)
+                    .FirstOrDefault();
 
-            _context.Posts.Update(post);
-            _context.SaveChanges();
+                if (post == null)
+                {
+                    return NotFound(new Response(message: "Post not found.", success: false));
+                }
 
-            return post;
+                return Ok(new Response<Post>(data: post));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new Response(
+                        message: "An internal error occurred while accessing post.",
+                        success: false,
+                        details: ex.Message
+                    )
+                );
+            }
+        }
+
+        /// <summary> Get public posts </summary>
+        /// <response code="200"> Return a page of posts </response>
+        [AllowAnonymous]
+        [HttpGet("public")]
+        public ActionResult<PageResponse<Post>> GetPublicPosts([FromQuery] Pagination pagination, [FromQuery] string? search)
+        {
+            try
+            {
+                Pagination validPagination = new(pagination.Page, pagination.Size);
+                var posts = new List<Post>();
+                var totalRecords = 0;
+
+                if (String.IsNullOrEmpty(search))
+                {
+                    posts = _context.Posts
+                          .Where(p => p.IsPublic && p.Blog.IsPublic)
+                          .Include(p => p.Blog)
+                          .OrderByDescending(p => p.Date)
+                          .Skip((validPagination.Page - 1) * validPagination.Size)
+                          .Take(validPagination.Size)
+                          .ToList();
+
+                    totalRecords = _context.Posts.Where(p => p.IsPublic && p.Blog.IsPublic).Count();
+                }
+                else
+                {
+                    posts = _context.Posts
+                           .Where(p => p.IsPublic && p.Blog.IsPublic && p.Title.Contains(search))
+                           .Include(p => p.Blog)
+                           .OrderByDescending(p => p.Date)
+                           .Skip((validPagination.Page - 1) * validPagination.Size)
+                           .Take(validPagination.Size)
+                           .ToList();
+
+                    totalRecords = _context.Posts.Where(p => p.IsPublic && p.Blog.IsPublic && p.Title.Contains(search)).Count();
+                }
+
+                PageResponse<List<Post>> pagedResponse = new(
+                    data: posts,
+                    page: validPagination.Page,
+                    size: validPagination.Size,
+                    totalRecords: totalRecords
+                );
+
+                return Ok(pagedResponse);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new Response(
+                        message: "An internal error occurred when accessing posts.",
+                        success: false,
+                        details: ex.Message
+                    )
+                );
+            }
+        }
+
+        /// <summary> Get public blog posts </summary>
+        /// <response code="200"> Return a page of posts </response>
+        [AllowAnonymous]
+        [HttpGet("public/blog-posts/{blogId}")]
+        public ActionResult<PageResponse<Post>> GetPublicBlogPosts([FromQuery] Pagination pagination, long blogId, [FromQuery] string? search)
+        {
+            try
+            {
+                Pagination validPagination = new(pagination.Page, pagination.Size);
+                var posts = new List<Post>();
+                var totalRecords = 0;
+                var blog = _context.Blogs
+                   .Where(b => b.Id == blogId && b.IsPublic)
+                   .FirstOrDefault();
+
+                if (blog == null)
+                {
+                    return NotFound(new Response(message: "Blog not found.", success: false));
+                }
+
+                if (String.IsNullOrEmpty(search))
+                {
+                    posts = _context.Posts
+                        .Where(p => p.IsPublic && p.Blog.IsPublic && p.BlogId == blogId)
+                        .Include(p=>p.Blog)
+                        .OrderByDescending(p => p.Date)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
+
+                    totalRecords = _context.Posts
+                       .Where(p => p.IsPublic && p.Blog.IsPublic && p.BlogId == blogId)
+                       .Count();
+                }
+                else
+                {
+                    posts = _context.Posts
+                        .Where(p => p.IsPublic && p.Blog.IsPublic && p.BlogId == blogId && p.Title.Contains(search))
+                        .Include(p=>p.Blog)
+                        .OrderByDescending(p => p.Date)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
+
+                    totalRecords = _context.Posts
+                       .Where(p => p.IsPublic && p.Blog.IsPublic && p.BlogId == blogId && p.Title.Contains(search))
+                       .Count();
+                }
+
+                PageResponse<List<Post>> pagedResponse = new(
+                    data: posts,
+                    page: validPagination.Page,
+                    size: validPagination.Size,
+                    totalRecords: totalRecords
+                );
+
+                return Ok(pagedResponse);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new Response(
+                        message: "An internal error occurred when accessing posts.",
+                        success: false,
+                        details: ex.Message
+                    )
+                );
+            }
+        }
+
+        /// <summary> Get post cover picture </summary>
+        /// <response code="200"> Return a file </response>
+        [HttpGet("cover-picture/{fileName}")]
+        public IActionResult GetCoverImage(string fileName)
+        {
+            try
+            {
+                var userId = Convert.ToInt64(User.Identity?.Name);
+                var post = _context.Posts.Where(p => p.CoverFileName == fileName).Include(p => p.Blog).FirstOrDefault();
+                if (
+                    post == null
+                    || (!post.Blog.IsPublic && post.UserAuthId != userId)
+                    || (!post.IsPublic && post.UserAuthId != userId)
+                )
+                {
+                    return NotFound(new Response(message: "There is no post with the image provided.", success: false));
+                }
+
+                return _filesService.GetFile(fileName);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new Response(message: ex.Message, success: false));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                     StatusCodes.Status500InternalServerError,
+                     new Response(
+                         message: "An internal server error occurred while retrieving the file.",
+                         success: false,
+                         details: ex.Message
+                     )
+                 );
+            }
         }
 
     }

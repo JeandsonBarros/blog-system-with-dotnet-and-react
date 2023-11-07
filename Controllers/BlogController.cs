@@ -4,6 +4,7 @@ using BlogAPI.DTOs;
 using BlogAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlogAPI.Controllers
 {
@@ -29,14 +30,14 @@ namespace BlogAPI.Controllers
         {
             try
             {
-                var userId = Convert.ToInt64(User?.Identity?.Name);
+                var userId = Convert.ToInt64(User.Identity?.Name);
 
                 Blog blog = new()
                 {
-                    Name = blogDto.Name,
-                    Matter = blogDto.Matter,
-                    ColorPrimary = blogDto.ColorPrimary,
-                    ColorSecondary = blogDto.ColorSecondary,
+                    Title = blogDto.Title,
+                    Description = blogDto.Description,
+                    HeaderColor = blogDto.HeaderColor,
+                    TitleColor = blogDto.TitleColor,
                     IsPublic = blogDto.IsPublic,
                     UserAuthId = userId
                 };
@@ -45,7 +46,7 @@ namespace BlogAPI.Controllers
                 _context.SaveChanges();
 
                 return CreatedAtAction(
-                    nameof(GetUserBlogById), new { id = blog.Id },
+                    nameof(GetUserBlog), new { id = blog.Id },
                     new Response<Blog>(data: blog)
                 );
             }
@@ -62,17 +63,20 @@ namespace BlogAPI.Controllers
             }
         }
 
-        /// <summary> Get a user blog by id </summary>
+        /// <summary> Get user blog by id </summary>
         /// <response code="200"> Return a blog </response>
         [Authorize]
-        [HttpGet("user/{id}")]
-        public ActionResult<Response<Blog>> GetUserBlogById(long id)
+        [HttpGet("of-user/{id}")]
+        public ActionResult<Response<Blog>> GetUserBlog(long id)
         {
             try
             {
-                var userId = Convert.ToInt64(User?.Identity?.Name);
+                var userId = Convert.ToInt64(User.Identity?.Name);
+                var blog = _context.Blogs
+                .Where(b => b.Id == id && b.UserAuthId == userId)
+                .Include(b => b.UserAuth)
+                .FirstOrDefault();
 
-                var blog = _context.Blogs.Where(b => b.Id == id && b.UserAuthId == userId).FirstOrDefault();
                 if (blog == null)
                 {
                     return NotFound(new Response(message: "Blog not found.", success: false));
@@ -96,31 +100,44 @@ namespace BlogAPI.Controllers
         /// <summary> List all blogs of logged in user </summary>
         /// <response code="200"> Return a blog page </response> 
         [Authorize]
-        [HttpGet("user")]
-        public ActionResult<PageResponse<Blog>> GetUserBlogs([FromQuery] Pagination pagination)
+        [HttpGet("of-user")]
+        public ActionResult<PageResponse<Blog>> GetUserBlogs([FromQuery] Pagination pagination, [FromQuery] string? search)
         {
             try
             {
-                var userId = Convert.ToInt64(User?.Identity?.Name);
-
                 Pagination validPagination = new(pagination.Page, pagination.Size);
+                var userId = Convert.ToInt64(User.Identity?.Name);
+                var blogs = new List<Blog>();
+                var totalRecords = 0;
 
-                var blogs = _context.Blogs
-                    .Where(b => b.UserAuthId == userId)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
+                if (String.IsNullOrEmpty(search))
+                {
+                    blogs = _context.Blogs
+                        .Where(b => b.UserAuthId == userId)
+                        .Include(b => b.UserAuth)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                var totalRecords = _context.Blogs.Where(b => b.UserAuthId == userId).Count();
+                    totalRecords = _context.Blogs.Where(b => b.UserAuthId == userId).Count();
+                }
+                else
+                {
+                    blogs = _context.Blogs
+                        .Where(b => b.UserAuthId == userId && b.Title.Contains(search))
+                        .Include(b => b.UserAuth)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
+                    totalRecords = _context.Blogs.Where(b => b.UserAuthId == userId && b.Title.Contains(search)).Count();
+                }
 
                 PageResponse<List<Blog>> pagedResponse = new(
                     data: blogs,
                     page: validPagination.Page,
                     size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
+                    totalRecords: totalRecords
                 );
 
                 return Ok(pagedResponse);
@@ -138,96 +155,6 @@ namespace BlogAPI.Controllers
             }
         }
 
-        /// <summary> Find blog among user blogs </summary>
-        /// <response code="200"> Return a blog page </response> 
-        [Authorize]
-        [HttpGet("user/find-by-name/{name}")]
-        public ActionResult<PageResponse<Blog>> FindUserBlog(string name, [FromQuery] Pagination pagination)
-        {
-            try
-            {
-                var userId = Convert.ToInt64(User.Identity?.Name);
-
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var blogs = _context.Blogs
-                    .Where(b => b.UserAuthId == userId && b.Name.Contains(name))
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Blogs.Where(b => b.UserAuthId == userId && b.Name.Contains(name)).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Blog>> pagedResponse = new(
-                    data: blogs,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred when searching for blog.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Find public blog by matter </summary>
-        /// <response code="200"> Return a blog page </response>
-        [Authorize]
-        [HttpGet("user/find-by-matter/{matter}")]
-        public ActionResult<PageResponse<Blog>> FindUserBlogByMatter(string matter, [FromQuery] Pagination pagination)
-        {
-            try
-            {
-                var userId = Convert.ToInt64(User.Identity?.Name);
-
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var blogs = _context.Blogs
-                    .Where(b => b.Matter.Contains(matter) && b.UserAuthId == userId)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Blogs.Where(b => b.Matter.Contains(matter) && b.UserAuthId == userId).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Blog>> pagedResponse = new(
-                    data: blogs,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred when searching for blogs.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
         /// <summary> Fully update a blog </summary>
         /// <response code="200"> Returns the updated blog </response> 
         [Authorize]
@@ -238,10 +165,10 @@ namespace BlogAPI.Controllers
             {
                 BlogDtoNoValidation blogDtoNoValidation = new()
                 {
-                    Name = blogDto.Name,
-                    Matter = blogDto.Matter,
-                    ColorPrimary = blogDto.ColorPrimary,
-                    ColorSecondary = blogDto.ColorSecondary,
+                    Title = blogDto.Title,
+                    Description = blogDto.Description,
+                    HeaderColor = blogDto.HeaderColor,
+                    TitleColor = blogDto.TitleColor,
                     IsPublic = blogDto.IsPublic,
                 };
 
@@ -305,6 +232,52 @@ namespace BlogAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Function for partial or total update of a blog
+        /// </summary>
+        /// <param name="id"> Id of the blog that will be updated </param>
+        /// <param name="blogDto"> Dto containing the new data </param>
+        /// <returns> Returns the updated blog </returns>
+        private Blog UpdateBlog(long id, BlogDtoNoValidation blogDto)
+        {
+            var userId = Convert.ToInt64(User.Identity?.Name);
+            var blog = _context.Blogs
+                .Where(b => b.Id == id && b.UserAuthId == userId)
+                .Include(b => b.UserAuth)
+                .FirstOrDefault();
+
+            if (blog == null)
+            {
+                throw new NotFoundException($"The logged in user does not have a blog where the id is {id}.");
+            }
+
+            if (!String.IsNullOrEmpty(blogDto.Title))
+            {
+                blog.Title = blogDto.Title;
+            }
+            if (!String.IsNullOrEmpty(blogDto.Description))
+            {
+                blog.Description = blogDto.Description;
+            }
+            if (!String.IsNullOrEmpty(blogDto.HeaderColor))
+            {
+                blog.HeaderColor = blogDto.HeaderColor;
+            }
+            if (!String.IsNullOrEmpty(blogDto.TitleColor))
+            {
+                blog.TitleColor = blogDto.TitleColor;
+            }
+            if (blogDto.IsPublic.HasValue)
+            {
+                blog.IsPublic = blogDto.IsPublic.Value;
+            }
+
+            _context.Blogs.Update(blog);
+            _context.SaveChanges();
+
+            return blog;
+        }
+
         /// <summary> Delete a blog </summary>
         /// <response code="204"> Not a content is returned </response>
         [Authorize]
@@ -314,7 +287,7 @@ namespace BlogAPI.Controllers
         {
             try
             {
-                var userId = Convert.ToInt64(User?.Identity?.Name);
+                var userId = Convert.ToInt64(User.Identity?.Name);
 
                 var blog = _context.Blogs.Where(b => b.Id == id && b.UserAuthId == userId).FirstOrDefault();
                 if (blog == null)
@@ -340,16 +313,18 @@ namespace BlogAPI.Controllers
             }
         }
 
-        /// <summary> Get a public blog by id </summary>
+        /// <summary> Get public blog by id </summary>
         /// <response code="200"> Return a blog </response>
         [AllowAnonymous]
         [HttpGet("public/{id}")]
-        public ActionResult<Response<Blog>> GetPublicBlogById(long id)
+        public ActionResult<Response<Blog>> GetPublicBlog(long id)
         {
             try
             {
+                var blog = _context.Blogs.Where(b => b.Id == id && b.IsPublic)
+                    .Include(b => b.UserAuth)
+                    .FirstOrDefault();
 
-                var blog = _context.Blogs.Where(b => b.Id == id && b.IsPublic).FirstOrDefault();
                 if (blog == null)
                 {
                     return NotFound(new Response(message: "Blog not found.", success: false));
@@ -374,28 +349,42 @@ namespace BlogAPI.Controllers
         /// <response code="200"> Return a blog page </response>        
         [AllowAnonymous]
         [HttpGet("public")]
-        public ActionResult<PageResponse<Blog>> GetPublicBlogs([FromQuery] Pagination pagination)
+        public ActionResult<PageResponse<Blog>> GetPublicBlogs([FromQuery] Pagination pagination, [FromQuery] string? search)
         {
             try
             {
                 Pagination validPagination = new(pagination.Page, pagination.Size);
+                var blogs = new List<Blog>();
+                var totalRecords = 0;
 
-                var blogs = _context.Blogs
-                    .Where(b => b.IsPublic)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
+                if (String.IsNullOrEmpty(search))
+                {
+                    blogs = _context.Blogs
+                        .Where(b => b.IsPublic)
+                        .Include(b => b.UserAuth)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                var totalRecords = _context.Blogs.Where(b => b.IsPublic).Count();
+                    totalRecords = _context.Blogs.Where(b => b.IsPublic).Count();
+                }
+                else
+                {
+                    blogs = _context.Blogs
+                        .Where(b => b.IsPublic && b.Title.Contains(search))
+                        .Include(b => b.UserAuth)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
+                    totalRecords = _context.Blogs.Where(b => b.IsPublic && b.Title.Contains(search)).Count();
+                }
 
                 PageResponse<List<Blog>> pagedResponse = new(
                     data: blogs,
                     page: validPagination.Page,
                     size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
+                    totalRecords: totalRecords
                 );
 
                 return Ok(pagedResponse);
@@ -411,134 +400,6 @@ namespace BlogAPI.Controllers
                     )
                 );
             }
-        }
-
-        /// <summary> Find public blog by name </summary>
-        /// <response code="200"> Return a blog page </response> 
-        [AllowAnonymous]
-        [HttpGet("public/find-by-name/{name}")]
-        public ActionResult<PageResponse<Blog>> FindPublicBlogByName(string name, [FromQuery] Pagination pagination)
-        {
-            try
-            {
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var blogs = _context.Blogs
-                    .Where(b => b.Name.Contains(name) && b.IsPublic)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Blogs.Where(b => b.Name.Contains(name) && b.IsPublic).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Blog>> pagedResponse = new(
-                    data: blogs,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred when searching for blog.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Find public blog by matter </summary>
-        /// <response code="200"> Return a blog page </response>
-        [AllowAnonymous]
-        [HttpGet("public/find-by-matter/{matter}")]
-        public ActionResult<PageResponse<Blog>> FindPublicBlogByMatter(string matter, [FromQuery] Pagination pagination)
-        {
-            try
-            {
-                Pagination validPagination = new(pagination.Page, pagination.Size);
-
-                var blogs = _context.Blogs
-                    .Where(b => b.Matter.Contains(matter) && b.IsPublic)
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
-
-                var totalRecords = _context.Blogs.Where(b => b.Matter.Contains(matter) && b.IsPublic).Count();
-
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
-
-                PageResponse<List<Blog>> pagedResponse = new(
-                    data: blogs,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
-
-                return Ok(pagedResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred when searching for blogs.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary>
-        /// Function for partial or total update of a blog
-        /// </summary>
-        /// <param name="id"> Id of the blog that will be updated </param>
-        /// <param name="blogDto"> Dto containing the new data </param>
-        /// <returns> Returns the updated blog </returns>
-        private Blog UpdateBlog(long id, BlogDtoNoValidation blogDto)
-        {
-            var userId = Convert.ToInt64(User?.Identity?.Name);
-            var blog = _context.Blogs.Where(b => b.Id == id && b.UserAuthId == userId).FirstOrDefault();
-            if (blog == null)
-            {
-                throw new NotFoundException($"The logged in user does not have a blog where the id is {id}.");
-            }
-
-            if (!String.IsNullOrEmpty(blogDto.Name))
-            {
-                blog.Name = blogDto.Name;
-            }
-            if (!String.IsNullOrEmpty(blogDto.Matter))
-            {
-                blog.Matter = blogDto.Matter;
-            }
-            if (!String.IsNullOrEmpty(blogDto.ColorPrimary))
-            {
-                blog.ColorPrimary = blogDto.ColorPrimary;
-            }
-            if (!String.IsNullOrEmpty(blogDto.ColorSecondary))
-            {
-                blog.ColorSecondary = blogDto.ColorSecondary;
-            }
-            if (blogDto.IsPublic.HasValue)
-            {
-                blog.IsPublic = blogDto.IsPublic.Value;
-            }
-
-            _context.Blogs.Update(blog);
-            _context.SaveChanges();
-
-            return blog;
         }
 
     }

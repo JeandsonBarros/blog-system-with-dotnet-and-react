@@ -43,23 +43,10 @@ namespace BlogAPI.Controllers
                 var userExists = _context.Users.Where(user => user.Email == userAuthDto.Email).FirstOrDefault();
                 if (userExists != null)
                 {
-                    if (userExists.IsConfirmedEmail)
-                    {
-                        return StatusCode(
-                            StatusCodes.Status400BadRequest,
-                            new Response(message: $"There is already a user with email address {userAuthDto.Email}.", success: false)
-                        );
-                    }
-                    else
-                    {
-                        if (!userExists.FileProfilePictureName.IsNullOrEmpty())
-                        {
-                            _filesService.DeleteFile(userExists.FileProfilePictureName);
-                        }
-
-                        _context.Users.Remove(userExists);
-                        _context.SaveChanges();
-                    }
+                    return StatusCode(
+                        StatusCodes.Status400BadRequest,
+                        new Response(message: $"There is already a user with email address {userAuthDto.Email}.", success: false)
+                    );
                 }
 
                 var role = _context.Roles.Where(role => role.RoleName == "USER").FirstOrDefault();
@@ -78,6 +65,7 @@ namespace BlogAPI.Controllers
                     Name = userAuthDto.Name,
                     Password = password
                 };
+
                 userAuth.Roles.Add(role);
 
                 if (userAuthDto.FileProfilePicture != null)
@@ -88,49 +76,14 @@ namespace BlogAPI.Controllers
                 _context.Users.Add(userAuth);
                 _context.SaveChanges();
 
-                Random random = new Random();
-                long code = random.Next(1000000, 2000000);
+                return CreatedAtAction(
+                    nameof(Login),
+                    new Response<UserAuth>(
+                        data: userAuth,
+                        message: "Registration completed successfully.",
+                        success: true
+                    ));
 
-                AuthorizationCode authorizationCode = new()
-                {
-                    Code = code,
-                    UserAuthId = userAuth.Id
-                };
-
-                _context.AuthorizationCodes.Add(authorizationCode);
-                _context.SaveChanges();
-
-                var (isSentEmail, messageSendEmail) = await SendEmailAsync(
-                    email: userAuth.Email,
-                    subject: "Email confirmation code - Blogs",
-                    body: $"The confirmation code in your email is {code}, valid for 15 minutes."
-                );
-
-                if (isSentEmail)
-                {
-                    string uri = $"{Request.Scheme}://{Request.Host}/api/auth/confirm-email";
-                    return Created(
-                        nameof(ConfirmEmail),
-                        new Response<UserAuth>(
-                            data: userAuth,
-                            message: $"The code for email confirmation has been sent to {userAuth.Email}.",
-                            success: true,
-                            details: $"Use the code in {uri}"
-                        )
-                    );
-                }
-
-                _context.AuthorizationCodes.Remove(authorizationCode);
-                _context.SaveChanges();
-
-                return StatusCode(
-                   StatusCodes.Status400BadRequest,
-                   new Response(
-                       message: "Error sending email with code to confirm email.",
-                       success: false,
-                       details: messageSendEmail
-                    )
-                );
             }
             catch (Exception ex)
             {
@@ -138,48 +91,6 @@ namespace BlogAPI.Controllers
                     StatusCodes.Status500InternalServerError,
                     new Response(
                         message: "An internal error occurred while registering.",
-                        success: false,
-                        details: ex.Message
-                    )
-                );
-            }
-        }
-
-        /// <summary> Confirm user email </summary>
-        /// <response code="200"> Returns the user updated </response>
-        /// <response code="404"> If there is no account with the email provided </response>
-        [AllowAnonymous]
-        [HttpPut("confirm-email")]
-        public ActionResult<Response<UserAuth>> ConfirmEmail(AuthorizationCodeDto authorizationCodeDto)
-        {
-            try
-            {
-                var user = _context.Users.Where(user => user.Email == authorizationCodeDto.Email).FirstOrDefault();
-                if (user == null)
-                {
-                    return NotFound(new Response(message: $"Email user {authorizationCodeDto.Email} not found.", success: false));
-                }
-
-                var (isValidCode, messageIsValidade) = IsValidAuthorizationCode(user.Id, authorizationCodeDto.Code);
-                if (isValidCode)
-                {
-                    user.IsConfirmedEmail = true;
-                    _context.Users.Update(user);
-                    _context.SaveChanges();
-                    return Ok(new Response<UserAuth>(data: user, message: "The email has been confirmed.", success: true));
-                }
-                else
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new Response(message: messageIsValidade, success: false));
-                }
-
-            }
-            catch (System.Exception ex)
-            {
-                return StatusCode(
-                    StatusCodes.Status500InternalServerError,
-                    new Response(
-                        message: "An internal error occurred while confirming email.",
                         success: false,
                         details: ex.Message
                     )
@@ -208,18 +119,6 @@ namespace BlogAPI.Controllers
                     return StatusCode(
                         StatusCodes.Status401Unauthorized,
                         new Response(message: "Invalid password.", success: false)
-                    );
-                }
-
-                if (!user.IsConfirmedEmail)
-                {
-                    return StatusCode(
-                        StatusCodes.Status401Unauthorized,
-                        new Response(
-                            message: "You need to confirm your email to login.",
-                            success: false,
-                            details: "To confirm the email, you must inform the endpoint /api/auth/confirm-email the code that was sent to the email."
-                        )
                     );
                 }
 
@@ -253,7 +152,7 @@ namespace BlogAPI.Controllers
         {
             try
             {
-                var id = Convert.ToInt64(User?.Identity?.Name);
+                var id = Convert.ToInt64(User.Identity?.Name);
                 var user = _context.Users.Find(id);
                 if (user == null)
                 {
@@ -320,11 +219,10 @@ namespace BlogAPI.Controllers
         {
             try
             {
-                var id = Convert.ToInt64(User?.Identity?.Name);
+                var id = Convert.ToInt64(User.Identity?.Name);
                 UserDtoNoValidation userDtoNoValidation = new()
                 {
                     Name = userDto.Name,
-                    Email = userDto.Email,
                     Password = userDto.Password,
                     FileProfilePicture = userDto.FileProfilePicture
                 };
@@ -368,7 +266,8 @@ namespace BlogAPI.Controllers
         {
             try
             {
-                var id = Convert.ToInt64(User?.Identity?.Name);
+                var id = Convert.ToInt64(User.Identity?.Name);
+                userDtoNoValidation.Email = null;
                 return Ok(new Response<UserAuth>(
                     data: await UpdateUser(id, userDtoNoValidation),
                     message: "User updated successfully.",
@@ -399,6 +298,52 @@ namespace BlogAPI.Controllers
             }
         }
 
+        /// <summary> Authenticated user deletes their profile photo </summary>
+        /// <response code="204"> If profile photo deleted success </response>
+        /// <response code="401"> if unauthenticated </response>
+        [Authorize]
+        [HttpDelete("delete-profile-image")]
+        [ProducesResponseType(204)]
+        public IActionResult DeleteProfilePhoto()
+        {
+            try
+            {
+                var id = Convert.ToInt64(User.Identity?.Name);
+                var user = _context.Users.Find(id);
+                if (user == null)
+                {
+                    return NotFound(new Response(message: "User not found.", success: false));
+                }
+
+                if (String.IsNullOrEmpty(user.FileProfilePictureName))
+                {
+                    return NotFound(new Response(
+                          message: "There is no photo to remove.",
+                          success: false
+                    ));
+                }
+
+                _filesService.DeleteFile(user.FileProfilePictureName);
+
+                user.FileProfilePictureName = null;
+                _context.Users.Update(user);
+                _context.SaveChanges();
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new Response(
+                        message: "An internal server error occurred while deleting the profile photo.",
+                        success: false,
+                        details: ex.Message
+                    )
+                );
+            }
+        }
+
         /// <summary> Authenticated user delete own account </summary>
         /// <response code="204"> If account deleted success </response>
         /// <response code="401"> if unauthenticated </response>
@@ -409,7 +354,7 @@ namespace BlogAPI.Controllers
         {
             try
             {
-                var id = Convert.ToInt64(User?.Identity?.Name);
+                var id = Convert.ToInt64(User.Identity?.Name);
                 var user = _context.Users.Find(id);
                 if (user == null)
                 {
@@ -460,7 +405,7 @@ namespace BlogAPI.Controllers
                 AuthorizationCode authorizationCode = new()
                 {
                     Code = code,
-                    UserAuthId = user.Id
+                    Email = user.Email
                 };
 
                 _context.AuthorizationCodes.Add(authorizationCode);
@@ -514,29 +459,51 @@ namespace BlogAPI.Controllers
         /// <response code="404"> If the entered code is incorrect or does not exist, or if there is no user with the entered email </response>
         [AllowAnonymous]
         [HttpPut("forgotten-password/change-password")]
-        public ActionResult<Response<UserAuth>> ChangeFogottenPassword(ChangeForgottenPasswordDto changeForgottenPasswordDto)
+        public ActionResult<Response<UserAuth>> ChangeFogottenPassword(DataToUpdateForgottenPassword dataToUpdateForgottenPassword)
         {
             try
             {
-                var user = _context.Users.Where(user => user.Email == changeForgottenPasswordDto.Email).FirstOrDefault();
+                var user = _context.Users.Where(user => user.Email == dataToUpdateForgottenPassword.Email).FirstOrDefault();
                 if (user == null)
                 {
-                    return NotFound(new Response(message: $"Email user {changeForgottenPasswordDto.Email} not found.", success: false));
+                    return NotFound(new Response(message: $"Email user {dataToUpdateForgottenPassword.Email} not found.", success: false));
                 }
 
-                var (isValidCode, message) = IsValidAuthorizationCode(user.Id, changeForgottenPasswordDto.Code);
+                var authorizationCode = _context.AuthorizationCodes.Where(codeEntity =>
+                    codeEntity.Code == dataToUpdateForgottenPassword.Code
+                    && codeEntity.Email == dataToUpdateForgottenPassword.Email
+                ).FirstOrDefault();
 
-                if (isValidCode)
+                /* Checks if the entered code exists and belongs to the entered email user */
+                if (authorizationCode == null)
                 {
-                    user.Password = ToHash(changeForgottenPasswordDto.NewPassword);
-                    _context.Users.Update(user);
+                    return StatusCode(
+                        StatusCodes.Status400BadRequest,
+                        new Response(message: "Incorrect authorization code.", success: false
+                    ));
+                }
+
+                /* Checks that the code has not expired */
+                if (DateTime.UtcNow > authorizationCode.CodeExpires)
+                {
+                    _context.AuthorizationCodes.Remove(authorizationCode);
                     _context.SaveChanges();
-                    return Ok(new Response<UserAuth>(data: user, message: "Password changed successfully.", success: true));
+
+                    return StatusCode(
+                        StatusCodes.Status400BadRequest,
+                        new Response(message: "Code expired.", success: false
+                    ));
                 }
-                else
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new Response(message: message, success: false));
-                }
+
+                user.Password = ToHash(dataToUpdateForgottenPassword.NewPassword);
+                _context.Users.Update(user);
+                _context.SaveChanges();
+
+                _context.AuthorizationCodes.Remove(authorizationCode);
+                _context.SaveChanges();
+
+                return Ok(new Response<UserAuth>(data: user, message: "Password changed successfully.", success: true));
+
             }
             catch (Exception ex)
             {
@@ -556,28 +523,42 @@ namespace BlogAPI.Controllers
         /// <response code="401"> if unauthenticated </response>
         /// <response code="403"> if non-admin  </response>
         [Authorize(Roles = "ADMIN")]
-        [HttpGet("list-all-users")]
-        public ActionResult<PageResponse<List<UserAuth>>> GetAllUsers([FromQuery] Pagination pagination)
+        [HttpGet("list-users")]
+        public ActionResult<PageResponse<List<UserAuth>>> GetUsers([FromQuery] Pagination pagination, [FromQuery] string? search)
         {
             try
             {
+                var userId = Convert.ToInt64(User.Identity?.Name);
                 var validPagination = new Pagination(pagination.Page, pagination.Size);
+                var users = new List<UserAuth>();
+                var totalRecords = 0;
 
-                var users = _context.Users
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
+                if (String.IsNullOrEmpty(search))
+                {
+                    users = _context.Users
+                        .Where(u => u.Id != userId)
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                var totalRecords = _context.Users.Count();
+                    totalRecords = _context.Users.Where(u => u.Id != userId).Count();
+                }
+                else
+                {
+                    users = _context.Users
+                        .Where(u => u.Id != userId && u.Email.Contains(search))
+                        .Skip((validPagination.Page - 1) * validPagination.Size)
+                        .Take(validPagination.Size)
+                        .ToList();
 
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
+                    totalRecords = _context.Users.Where(u => u.Id != userId && u.Email.Contains(search)).Count();
+                }
 
                 PageResponse<List<UserAuth>> pagedResponse = new(
                     data: users,
                     page: validPagination.Page,
                     size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
+                    totalRecords: totalRecords
                 );
 
                 return Ok(pagedResponse);
@@ -595,48 +576,57 @@ namespace BlogAPI.Controllers
             }
         }
 
-        /// <summary> Admin: Find user by email </summary>
-        /// <response code="200"> Return a page of users </response>
+        /// <summary> Admin: Delete a user's profile photo</summary>
+        /// <response code="204"> If profile photo deleted success </response>
         /// <response code="401"> if unauthenticated </response>
-        /// <response code="403"> if non-admin  </response>
         [Authorize(Roles = "ADMIN")]
-        [HttpGet("find-by-email/{email}")]
-        public ActionResult<PageResponse<List<UserAuth>>> FindUserByEmail([FromQuery] Pagination pagination, string email)
+        [HttpDelete("delete-a-user-photo/{userId}")]
+        [ProducesResponseType(204)]
+        public IActionResult DeleteAUserProfilePhoto(long userId)
         {
             try
             {
-                var validPagination = new Pagination(pagination.Page, pagination.Size);
+                var user = _context.Users.Find(userId);
+                if (user == null)
+                {
+                    return NotFound(new Response(message: "User not found.", success: false));
+                }
 
-                var users = _context.Users
-                    .Where(user => user.Email.Contains(email))
-                    .Skip((validPagination.Page - 1) * validPagination.Size)
-                    .Take(validPagination.Size)
-                    .ToList();
+                bool isAdmin = user.Roles.Any(role => role.RoleName == "ADMIN");
+                if (isAdmin)
+                {
+                    return StatusCode(
+                        StatusCodes.Status403Forbidden,
+                        new Response(message: "An admin cannot delete profile photo another admin.", success: false)
+                    );
+                }
 
-                var totalRecords = _context.Users.Where(user => user.Email.Contains(email)).Count();
+                if (String.IsNullOrEmpty(user.FileProfilePictureName))
+                {
+                    return NotFound(new Response(
+                          message: "There is no photo to remove.",
+                          success: false
+                    ));
+                }
 
-                string baseUri = $"{Request.Scheme}://{Request.Host}{Request.Path.Value}";
+                _filesService.DeleteFile(user.FileProfilePictureName);
 
-                PageResponse<List<UserAuth>> pagedResponse = new(
-                    data: users,
-                    page: validPagination.Page,
-                    size: validPagination.Size,
-                    totalRecords: totalRecords,
-                    uri: baseUri
-                );
+                user.FileProfilePictureName = null;
+                _context.Users.Update(user);
+                _context.SaveChanges();
 
-                return Ok(pagedResponse);
+                return StatusCode(StatusCodes.Status204NoContent);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 return StatusCode(
-                   StatusCodes.Status500InternalServerError,
-                   new Response(
-                       message: "An internal server error occurred while locating the user.",
-                       success: false,
-                       details: ex.Message
-                   )
-               );
+                    StatusCodes.Status500InternalServerError,
+                    new Response(
+                        message: "An internal server error occurred while deleting the profile photo.",
+                        success: false,
+                        details: ex.Message
+                    )
+                );
             }
         }
 
@@ -812,13 +802,17 @@ namespace BlogAPI.Controllers
         }
 
         /* Function to update user, either by Put or Patch */
-        private async Task<UserAuth> UpdateUser(long userAuthId, UserDtoNoValidation userDto)
+        private async Task<UserAuth> UpdateUser(long userId, UserDtoNoValidation userDto)
         {
-            var userAuth = _context.Users.Where(u => u.Id == userAuthId).FirstOrDefault();
+            var user = _context.Users.Find(userId);
+            if (user == null)
+            {
+                throw new NotFoundException("User not found.");
+            }
 
             if (!userDto.Name.IsNullOrEmpty())
             {
-                userAuth.Name = userDto.Name;
+                user.Name = userDto.Name;
             }
 
             if (!userDto.Email.IsNullOrEmpty())
@@ -830,12 +824,12 @@ namespace BlogAPI.Controllers
                 }
 
                 var userExists = _context.Users.Where(user => user.Email == userDto.Email).FirstOrDefault();
-                if (userExists is not null && userExists.Email != userAuth.Email)
+                if (userExists is not null && userExists.Email != user.Email)
                 {
                     throw new BadHttpRequestException($"User with {userDto.Email} already exists!");
                 }
 
-                userAuth.Email = userDto.Email;
+                user.Email = userDto.Email;
             }
 
             if (!userDto.Password.IsNullOrEmpty())
@@ -845,23 +839,23 @@ namespace BlogAPI.Controllers
                     throw new BadHttpRequestException("The password must have at least 6 characters");
                 }
 
-                userAuth.Password = ToHash(userDto.Password);
+                user.Password = ToHash(userDto.Password);
             }
 
             if (userDto.FileProfilePicture != null)
             {
-                if (!userAuth.FileProfilePictureName.IsNullOrEmpty())
+                if (!user.FileProfilePictureName.IsNullOrEmpty())
                 {
-                    _filesService.DeleteFile(userAuth.FileProfilePictureName);
+                    _filesService.DeleteFile(user.FileProfilePictureName);
                 }
 
-                userAuth.FileProfilePictureName = await _filesService.SaveFile(userDto.FileProfilePicture);
+                user.FileProfilePictureName = await _filesService.SaveFile(userDto.FileProfilePicture);
             }
 
-            _context.Users.Update(userAuth);
+            _context.Users.Update(user);
             _context.SaveChanges();
 
-            return userAuth;
+            return user;
         }
 
         /* Function to send email */
@@ -940,29 +934,5 @@ namespace BlogAPI.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        /* Verifies that an authorization code is valid.
-        An authorization code is used to confirm email or change forgotten password. */
-        private (bool IsValidade, string Message) IsValidAuthorizationCode(long userId, long code)
-        {
-            /* Checks if the entered code exists and belongs to the entered email user */
-            var authorizationCode = _context.AuthorizationCodes.Where(codeEntity =>
-                codeEntity.Code == code
-                && codeEntity.UserAuthId == userId).FirstOrDefault();
-            if (authorizationCode == null)
-            {
-                return (false, "Incorrect authorization code.");
-            }
-
-            /* Checks that the code has not expired */
-            if (DateTime.UtcNow > authorizationCode.CodeExpires)
-            {
-                _context.AuthorizationCodes.Remove(authorizationCode);
-                _context.SaveChanges();
-
-                return (false, "Code expired.");
-            }
-
-            return (true, "Code is valid.");
-        }
     }
 }

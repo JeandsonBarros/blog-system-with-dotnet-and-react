@@ -8,7 +8,7 @@ namespace BlogAPI.DTOs
 {
     public class CommentDto
     {
-        [Required(ErrorMessage = "Comentário é obrigatório.")]
+        [Required(ErrorMessage = "Comment is mandatory.")]
         public string CommentText { get; set; }
     }
 }

@@ -14,7 +14,6 @@ namespace BlogAPI.Models
         public string? FileProfilePictureName { get; set; }
         [JsonIgnore]
         public string Password { get; set; }
-        public bool IsConfirmedEmail { get; set; } = false;
         public IList<Role> Roles { get; set; } = new List<Role>();
         [JsonIgnore]
         public List<Blog> Blogs { get; set; } = new List<Blog>();

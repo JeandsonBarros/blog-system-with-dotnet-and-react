@@ -9,7 +9,8 @@ namespace BlogAPI.Context
 {
     public class BlogContext: DbContext
     {
-        public BlogContext(DbContextOptions<BlogContext> options): base(options){ }
+        public BlogContext(DbContextOptions<BlogContext> options): base(options){
+        }
 
         public DbSet<UserAuth> Users { get; set; }
         public DbSet<Role> Roles { get; set; }

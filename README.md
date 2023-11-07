@@ -10,7 +10,7 @@
 API developed for blog system. The API has the following features:
 - Authentication
 - Send email to reset forgotten password
-- blog management
+- Blog management
 - Post management
 - Management of post comments
 - Documentation with Swagger
